@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 
 
 def generate_data(d: int, size: int):
-    C1 = np.random.multivariate_normal(np.random.uniform(-1, 1, d), np.diag([0.5, 0.2]), size)
-    C2 = np.random.multivariate_normal(np.random.uniform(-1, 1, d), np.diag([0.1, .2]), size)
+    C1 = np.random.multivariate_normal(
+        np.random.uniform(-1, 1, d), np.diag([0.5, 0.2]), size
+    )
+    C2 = np.random.multivariate_normal(
+        np.random.uniform(-1, 1, d), np.diag([0.1, 0.2]), size
+    )
     return C1, C2
 
 
@@ -18,15 +22,15 @@ def generate_data(d: int, size: int):
 
 
 def sigmoid(z):
-    return 1 / (1 + np.exp(- z))
+    return 1 / (1 + np.exp(-z))
 
 
 def loss(X, y, w):
-    return - np.sum(np.log(sigmoid(y * (w.T @ X))))
+    return -np.sum(np.log(sigmoid(y * (w.T @ X))))
 
 
 def gradient(X, y, w):
-    delta = - (y * (1 - sigmoid(y * (w.T @ X))))  # error term (think why!)
+    delta = -(y * (1 - sigmoid(y * (w.T @ X))))  # error term (think why!)
     return X @ delta  # X times error term. Same as linear regression
 
 
@@ -51,7 +55,7 @@ def plot_scatter(ax, C1, C2, w, w_name: str):
     ax.set_ylabel("y")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     d = 2  # feature embedding dimension
     n = 100  # number of samples per class
     C1, C2 = generate_data(d, n)  # data per class
@@ -59,16 +63,16 @@ if __name__ == '__main__':
 
     X = np.concat([C1, C2]).T  # join into one dataset
     X = np.concat([X, np.ones((1, 2 * n))])  # add bias term
-    y = np.concat([np.ones(n), - np.ones(n)])  # class labels
+    y = np.concat([np.ones(n), -np.ones(n)])  # class labels
     print(X.shape, y.shape)
     print(f"init loss: {loss(X, y, w_0)}")
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
-    plot_scatter(axes[0], C1, C2, w_0, 'w_0')
+    plot_scatter(axes[0], C1, C2, w_0, "w_0")
 
     w = gradient_descent(X, y, w_0, 2000, 0.001)
     # the set {x: w.T x + b = 0} is the set where s(w.T x) = 0.5, i.e. where the class prob is equal
 
-    plot_scatter(axes[1], C1, C2, w, 'w_final')
+    plot_scatter(axes[1], C1, C2, w, "w_final")
     plt.tight_layout()
     plt.show()

@@ -11,6 +11,44 @@ from typing import Optional
 from functools import cached_property
 
 
+class MixtureOfExperts(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        n_experts: int,
+        top_k: int,
+        hidden_dim: int = 512,
+    ):
+        super().__init__()
+        self.W = nn.Linear(input_dim, n_experts, bias=False)
+        self.top_k = top_k
+        self.n_experts = n_experts
+
+        # each expert is a full ff nn
+        self.experts = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(input_dim, hidden_dim),
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, output_dim),
+                )
+                for _ in range(n_experts)
+            ]
+        )
+        self.output_dim = output_dim
+
+    def forward(self, x):
+        # this implementation, does not make use of the sparsity for saving compute
+        scores = self.W(x)
+        topk_vals, topk_idx = scores.topk(k=self.top_k, dim=-1)
+        mask = torch.full_like(scores, float("-inf"))
+        mask.scatter_(dim=-1, index=topk_idx, src=topk_vals)
+        weights = torch.softmax(mask, dim=-1)
+        expert_output = torch.stack([expert(x) for expert in self.experts], dim=-1)
+        return (weights.unsqueeze(-2) @ expert_output.transpose(3, 2)).squeeze(-2)
+
+
 class AttentionLayer(nn.Module):
     def __init__(self, feat_dim: int, att_dim: int):
         super().__init__()
@@ -26,6 +64,11 @@ class AttentionLayer(nn.Module):
         V = self.W_V(x)
         L = x.shape[-2]
         # note the normalization!
+        # This is important, since without it, the softmax will make the distribution very pointy!
+        # t1 = torch.tensor([4.7, 2, 2, 2])
+        # t2 = 5 * t1
+        # print(F.softmax(t1)) == tensor([0.8322, 0.0559, 0.0559, 0.0559])
+        # print(F.softmax(t2)) == tensor([1.0000e+00, 1.3710e-06, 1.3710e-06, 1.3710e-06])
         scores = torch.bmm(Q, K.transpose(1, 2)) / math.sqrt(
             self.att_dim
         )  # dim (bs, L, L)
@@ -62,13 +105,16 @@ class TransformerBlock(nn.Module):
         # self.norm1 = nn.LayerNorm(feat_dim)
         self.norm1 = LayerNorm(feat_dim)
         self.norm2 = LayerNorm(feat_dim)
-        self.ff = nn.Sequential(
-            nn.Linear(feat_dim, ff_dim), nn.ReLU(), nn.Linear(ff_dim, feat_dim)
+        self.moe = MixtureOfExperts(
+            input_dim=feat_dim, output_dim=feat_dim, n_experts=5, top_k=2
         )
+        # self.ff = nn.Sequential(
+        #     nn.Linear(feat_dim, ff_dim), nn.ReLU(), nn.Linear(ff_dim, feat_dim)
+        # )
 
     def forward(self, x):
         x = x + self.attention_layer(self.norm1(x))
-        return x + self.ff(self.norm2(x))
+        return x + self.moe(self.norm2(x))
 
 
 class SinosoidalPositionalEmbedding(nn.Module):
@@ -192,6 +238,8 @@ def train_model(
     data_loader: DataLoader, n_epochs: int, model: nn.Module, learning_rate: float
 ):
     model.train()
+    for name, param in model.named_parameters():
+        print(name)
     for i in range(n_epochs):
         for x_b, y_b in data_loader:
             loss = nn.CrossEntropyLoss()(model(x_b), y_b)

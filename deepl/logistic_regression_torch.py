@@ -10,10 +10,14 @@ device = torch.device("cpu")
 
 def generate_data(d: int, size: int):
     cov1 = torch.diag(torch.tensor([0.5, 0.2], dtype=dtype, device=device))
-    C1_0 = MultivariateNormal(loc=torch.rand(d), covariance_matrix=cov1).sample((size //2,))
-    C1_1 = MultivariateNormal(loc=2 + torch.rand(d), covariance_matrix=cov1).sample((size //2,))
+    C1_0 = MultivariateNormal(loc=torch.rand(d), covariance_matrix=cov1).sample(
+        (size // 2,)
+    )
+    C1_1 = MultivariateNormal(loc=2 + torch.rand(d), covariance_matrix=cov1).sample(
+        (size // 2,)
+    )
     C1 = torch.cat([C1_0, C1_1])
-    cov2 = torch.diag(torch.tensor([0.1, .2], dtype=dtype, device=device))
+    cov2 = torch.diag(torch.tensor([0.1, 0.2], dtype=dtype, device=device))
     C2 = MultivariateNormal(loc=torch.rand(d), covariance_matrix=cov2).sample((size,))
     return C1, C2
 
@@ -28,12 +32,12 @@ def generate_data(d: int, size: int):
 
 
 def sigmoid(z):
-    return 1 / (1 + torch.exp(- z))
+    return 1 / (1 + torch.exp(-z))
 
 
 def compute_loss(X, y, w):
     # loss function stability logsigmoid!
-    return - torch.sum(F.logsigmoid(y * (w.T @ X)))
+    return -torch.sum(F.logsigmoid(y * (w.T @ X)))
 
 
 def gradient_descent(X, y, w_init, n_steps, step_size):
@@ -63,6 +67,7 @@ def gradient_descent(X, y, w_init, n_steps, step_size):
 def to_np(t):
     return t.detach().cpu().numpy()
 
+
 def plot_scatter(ax, C1, C2, w, w_name: str):
     x = torch.linspace(-2, 2, 200)
     w1, w2, b = w
@@ -80,32 +85,38 @@ def plot_scatter(ax, C1, C2, w, w_name: str):
 
 def plot_classification(ax, C1, C2, w):
     for c in C1:
-        c = torch.cat([c, torch.ones((1, ))])
+        c = torch.cat([c, torch.ones((1,))])
         p = sigmoid(w.dot(c))
         class_symbol = "*" if p >= 0.5 else "o"
-        ax.scatter(c[0], c[1], label="C1", color='b', marker=class_symbol)
+        ax.scatter(c[0], c[1], label="C1", color="b", marker=class_symbol)
     for c in C2:
         c = torch.cat([c, torch.ones((1,))])
         p = sigmoid(w.dot(c))
         class_symbol = "*" if p >= 0.5 else "o"
-        ax.scatter(c[0], c[1], label="C1", color='orange', marker=class_symbol)
+        ax.scatter(c[0], c[1], label="C1", color="orange", marker=class_symbol)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     d = 2  # feature embedding dimension
     n = 100  # number of samples per class
     C1, C2 = generate_data(d, n)  # data per class
     w_0 = torch.rand(d + 1, requires_grad=True)  # start point for w
 
     X = torch.cat([C1, C2]).T.to(device)  # join into one dataset
-    X = torch.cat([X, torch.ones((1, 2 * n), dtype=dtype, device=device)])  # add bias term
+    X = torch.cat(
+        [X, torch.ones((1, 2 * n), dtype=dtype, device=device)]
+    )  # add bias term
     y = torch.cat(
-        [torch.ones(n, dtype=dtype, device=device), - torch.ones(n, dtype=dtype, device=device)])  # class labels
+        [
+            torch.ones(n, dtype=dtype, device=device),
+            -torch.ones(n, dtype=dtype, device=device),
+        ]
+    )  # class labels
     print(X.shape, y.shape)
     print(f"init loss: {compute_loss(X, y, w_0)}")
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
-    plot_scatter(axes[0], C1, C2, w_0, 'w_0')
+    plot_scatter(axes[0], C1, C2, w_0, "w_0")
 
     w = gradient_descent(X, y, w_0, 2000, 0.001)
     # the set {x: w.T x + b = 0} is the set where s(w.T x) = 0.5, i.e. where the class prob is equal

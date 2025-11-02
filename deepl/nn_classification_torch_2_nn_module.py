@@ -27,16 +27,20 @@ def generate_ring_data(d: int, n: int, dtype=torch.float32, device="cpu"):
     # ----- Outer Ring -----
     angles = 2 * torch.pi * torch.rand(n, dtype=dtype, device=device)
     radius = 2.5 + 0.2 * torch.randn(n, dtype=dtype, device=device)  # radius with noise
-    x_outer = torch.stack([radius * torch.cos(angles), radius * torch.sin(angles)], dim=1)
+    x_outer = torch.stack(
+        [radius * torch.cos(angles), radius * torch.sin(angles)], dim=1
+    )
     C2 = x_outer
 
     # ----- Combine -----
     X = torch.cat([C1, C2])  # shape (2n, 2)
 
-    y = torch.cat([
-        torch.zeros(n, dtype=dtype, device=device),
-        torch.ones(n, dtype=dtype, device=device)
-    ])
+    y = torch.cat(
+        [
+            torch.zeros(n, dtype=dtype, device=device),
+            torch.ones(n, dtype=dtype, device=device),
+        ]
+    )
 
     print(X.shape, y.shape)
     return X, y
@@ -48,7 +52,9 @@ def compute_loss(X, y, model):
     return nn.CrossEntropyLoss()(model(X), y.long())
 
 
-def minibatch_gradient_descent(train_ds: TensorDataset, model, n_epochs, learning_rate, batchsize):
+def minibatch_gradient_descent(
+    train_ds: TensorDataset, model, n_epochs, learning_rate, batchsize
+):
     # https://docs.pytorch.org/tutorials/beginner/examples_autograd/polynomial_autograd.html
     #  always call model.train() before training, and model.eval() before inference,
     #  because these are used by layers such as nn.BatchNorm2d and nn.Dropout
@@ -82,14 +88,20 @@ def plot_classification(ax, X, y, model):
     model.eval()
     with torch.no_grad():
         y_hat = F.softmax(model(X)).argmax(dim=1)
-    colors = ['b', 'orange']
-    markers = ['*', 'o']
+    colors = ["b", "orange"]
+    markers = ["*", "o"]
     for y_target, y_hat_target in [(0, 0), (0, 1), (1, 1), (1, 0)]:
         x = X[(y == y_target) & (y_hat == y_hat_target), :]
-        ax.scatter(x[:, 0], x[:, 1], label="C1", color=colors[y_target], marker=markers[y_hat_target])
+        ax.scatter(
+            x[:, 0],
+            x[:, 1],
+            label="C1",
+            color=colors[y_target],
+            marker=markers[y_hat_target],
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     d = 2  # feature embedding dimension
     n = 100  # number of samples per class
     X, y = generate_ring_data(d, n)
@@ -100,15 +112,15 @@ if __name__ == '__main__':
 
     # nn.Sequential is a subclass of nn.Module that makes simple feed-forward architectures easier to write.
     model = nn.Sequential(
-        nn.Linear(d, embedding_d),
-        nn.ReLU(),
-        nn.Linear(embedding_d, 2)
+        nn.Linear(d, embedding_d), nn.ReLU(), nn.Linear(embedding_d, 2)
     )
     plot_classification(axes[0], X, y, model)
 
     print(f"init loss: {compute_loss(X, y, model)}")
 
-    minibatch_gradient_descent(train_ds, model, n_epochs=1000, learning_rate=0.01, batchsize=10)
+    minibatch_gradient_descent(
+        train_ds, model, n_epochs=1000, learning_rate=0.01, batchsize=10
+    )
 
     plot_classification(axes[1], X, y, model)
     plt.tight_layout()

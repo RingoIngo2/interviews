@@ -16,13 +16,16 @@ y = np.matmul(w_gt.T, X)
 # = (w.T * X - y.T) * (w.T * X - y.T).T
 # = w.T X X.T w - 2 y.T X w - y.T y
 # derivative != 0
-# 2  X X.T w - 2 X y = 0
+# 2  X X.T w - 2 X y = 0     <==> X(X.T w - y) != 0
 #  X X.T w= X y
 # w = (X X.T)-1 X y
 
 # w = np.linalg.inv(X @ X.T) @ X @ y
 
-def gradient_descent(step_size: float, n_steps: int, X: np.ndarray, y: np.ndarray, w_init: np.ndarray):
+
+def gradient_descent(
+    step_size: float, n_steps: int, X: np.ndarray, y: np.ndarray, w_init: np.ndarray
+):
     w = w_init
     for i in range(n_steps):
         delta = X.T @ w - y  # error term
@@ -33,6 +36,6 @@ def gradient_descent(step_size: float, n_steps: int, X: np.ndarray, y: np.ndarra
     return w
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     gradient_descent(0.02, 50, X, y, np.ones(d))
     # print(np.linalg.norm(w - w_gt))
