@@ -90,7 +90,7 @@ class LayerNorm(nn.Module):
         self.beta = nn.Parameter(torch.zeros(feat_dim))
         self.eps = eps
 
-    def forward(self, x):
+    def forward(self, x):  # shape: [bs, L, feat_dim]
         m = torch.mean(x, dim=-1, keepdim=True)
         std = torch.std(x, dim=-1, unbiased=False, keepdim=True)
         return ((x - m) / (std + self.eps)) * self.gamma + self.beta
