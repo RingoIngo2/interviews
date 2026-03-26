@@ -1,0 +1,16 @@
+You are tasked with designing and implementing an agent that can assist users in completing document-related tasks.
+The input to the agent should be a single prompt (no back and forth with the human is required), the agent tries to resolve the task, and stops when the user's request is accomplished.
+
+Example user input:
+"I started to draft a document. Please finish the document for me. The path to the file is /path/to/file.txt"
+
+We may assume that
+- we are only dealing with text files
+- we (for the start) only need to append text to a file. I.e., we don't need to modify the existing content. Lets also discuss what to do if the agent would need to modify arbitrary parts of the text file.
+
+```python
+if __name__ == "__main__":
+
+    agent = Agent(...)
+    agent.run("I started to draft a document. Please finish the document for me. The path to the file is /path/to/file.txt")
+```

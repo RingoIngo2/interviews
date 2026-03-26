@@ -1,0 +1,50 @@
+Input format
+
+{
+  "system": "You are a helpful file completion agent...",
+  "messages": [
+    {"role": "user", "text": "Complete this file"},
+    {"role": "assistant", "text": "I will begin by reading the file."},
+    ...
+  ],
+  "tools": ["read_file", "append_file"]
+}
+
+Output
+
+{
+  "tool_call": {
+    "name": "read_file",
+    "input": {"path": "example.py"}
+  }
+}
+ or
+
+{
+"text": "some answer"
+}
+-----
+Input format
+
+{
+  "system": "You are a helpful file completion agent...",
+  "messages": [
+    {"role": "user", "text": "Complete this file"},
+    {"role": "assistant", "text": "I will begin by reading the file."},
+    ...
+  ],
+}
+
+Output
+
+{
+  "tool_call": {
+    "name": "read_file",
+    "input": {"path": "example.py"}
+  }
+}
+ or
+
+{
+"text": "some answer"
+}
